@@ -28,7 +28,7 @@ class Product
      *
      * @var array
      */
-    protected static $productsData = [];
+    protected static $data = [];
 
     /**
      * Separator on nested attributes
@@ -52,7 +52,7 @@ class Product
             'page' => intval($args['page']) ?: 1
         ];
 
-        $success = self::setProductsData($args['page_size'], $args['page']);
+        $success = self::setData($args['page_size'], $args['page']);
 
         if (!$success) {
             return [
@@ -61,7 +61,7 @@ class Product
             ];
         }
 
-        return self::$productsData;
+        return self::$data;
     }
 
     /**
@@ -72,7 +72,7 @@ class Product
      */
     public static function find(int $id)
     {
-        $success = self::setProductsData(1, 1, $id);
+        $success = self::setData(1, 1, $id);
 
         if (!$success) {
             return [
@@ -81,18 +81,18 @@ class Product
             ];
         }
 
-        return self::$productsData;
+        return self::$data;
     }
 
     /**
      * Set products data from the productsUrl and attributesUrl
      *
-     * @param int $page_size How many products each page should contain
+     * @param int $pageSize How many products each page should contain
      * @param int $page What specific page we are trying to get
      * @param int $id A specific id we are trying to get
      * @return bool Whether or not the process of setting the data was successful
      */
-    protected static function setProductsData(int $page_size = 5, int $page = 1, int $id = 0)
+    protected static function setData(int $pageSize = 5, int $page = 1, int $id = 0)
     {
         try {
             $productsUrlResponse = Requests::get(self::$productsUrl);
@@ -115,11 +115,15 @@ class Product
         if ($id) {
             $products = self::getSingleProduct($products, $id);
         } else {
-            $pages = array_chunk($products, $page_size);
-            $products = $pages[self::getPageIndex($page, $pages)];
+            $pages = array_chunk($products, $pageSize);
+            $maxPage = count($pages);
+            $page = self::forceValidPage($page, $maxPage);
+            $products = $pages[self::getPageIndex($page, $maxPage, $pages)];
         }
 
-        self::$productsData = self::buildProductsData($products);
+        self::$data['products'] = self::buildProductsData($products);
+        self::$data['page'] = $page;
+        self::$data['totalPages'] = $id ? 1 : $maxPage;
 
         return true;
     }
@@ -147,20 +151,19 @@ class Product
     /**
      * Get index of a page in the pages array
      *
-     * @param integer $page
+     * @param int $page
+     * @param int $maxPage
      * @param array $pages
      * @return int
      */
-    protected static function getPageIndex(int $page, array $pages)
+    protected static function getPageIndex(int $page, int $maxPage, array $pages)
     {
         if ($page <= 1) {
             return 0;
         }
 
-        $max_page = count($pages);
-
-        if ($page >= $max_page) {
-            return $max_page - 1;
+        if ($page >= $maxPage) {
+            return $maxPage - 1;
         }
 
         return !empty($pages[$page - 1]) ? $page - 1 : 0; // Just in case, if for some reason the index does not exists in the array
@@ -201,5 +204,25 @@ class Product
         }
 
         return Attribute::format($attributes);
+    }
+
+    /**
+     * Force valid page 
+     *
+     * @param int $page
+     * @param int $maxPage
+     * @return int
+     */
+    protected static function forceValidPage(int $page, int $maxPage)
+    {
+        if ($page < 1) {
+            return 1;
+        }
+
+        if ($page > $maxPage) {
+            return $maxPage;
+        }
+
+        return $page;
     }
 }
