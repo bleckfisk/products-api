@@ -11,6 +11,7 @@
 
 ## Routes/Endpoints
 All endpoints are assuming `localhost:8000`
+
 `/` - Check if we are alive. This will return the laravel version, nothing fancy
 
 `/products` - Get products. Will use page 1 and page size of 5 as default if no query parameters are provided. Supported query parameters are `page_size={int}` and `page={int}`. Example: `/products?page_size=1&page=3`
