@@ -10,8 +10,6 @@ class ProductsTest extends TestCase
     /**
      * Test for the logic provided in the task specification
      * 
-     * Data is different than in the specification, however the logic and structure is the same.
-     * 
      * This test proves that when we as for page_size of 2, and page 1, we get 2 items in our products and with appropriate values in the other keys.
      *
      * @return void
@@ -52,6 +50,112 @@ class ProductsTest extends TestCase
         $this->assertEquals(1, $data['page']);
         $this->assertArrayHasKey('totalPages', $data);
         $this->assertIsInt($data['totalPages']);
+    }
+
+    /**
+     * Test for page in the middle of the data
+     * 
+     * This test proves that with page 3 as a query parameter, we get 3 on our returned page value
+     *
+     * @return void
+     */
+    public function test_application_handles_other_pages(): void
+    {
+        $response = $this->get('/products?page=3&page_size=2');
+
+        $response->assertStatus(200);
+
+        $data = $response->json();
+
+        $this->assertArrayHasKey('page', $data);
+        $this->assertIsInt($data['page']);
+        $this->assertEquals(3, $data['page']);
+    }
+
+    /**
+     * Test for pagination
+     * 
+     * This test proves that when we as for page_size of 2, and page 1, we get 2 items in our products and with appropriate values in the other keys.
+     *
+     * @return void
+     */
+    public function test_different_pages_has_different_data(): void
+    {
+        // First Request
+        $firstResponse = $this->get('/products?page=1&page_size=3');
+        $firstResponse->assertStatus(200);
+        $firstData = $firstResponse->json();
+
+        // Assure that the data is correct so we know we can compare it to a second request
+        $this->assertArrayHasKey('products', $firstData);
+        $this->assertIsArray($firstData['products']);
+        $this->assertEquals(3, count($firstData['products']));
+
+        foreach ($firstData['products'] as $product) {
+            $this->assertArrayHasKey('id', $product);
+            $this->assertIsInt($product['id']);
+
+            $this->assertArrayHasKey('name', $product);
+            $this->assertIsString($product['name']);
+
+            $this->assertArrayHasKey('attributes', $product);
+            $this->assertIsArray($product['attributes']);
+
+            foreach ($product['attributes'] as $attribute) {
+                $this->assertArrayHasKey('name', $attribute);
+                $this->assertIsString($attribute['name']);
+
+                $this->assertArrayHasKey('value', $attribute);
+                $this->assertIsString($attribute['value']);
+            }
+        }
+
+        $this->assertArrayHasKey('page', $firstData);
+        $this->assertIsInt($firstData['page']);
+        $this->assertEquals(1, $firstData['page']);
+        $this->assertArrayHasKey('totalPages', $firstData);
+        $this->assertIsInt($firstData['totalPages']);
+
+        // Second Request
+        $secondResponse = $this->get('/products?page=2&page_size=3'); // this has another page
+        $secondResponse->assertStatus(200);
+        $secondData = $secondResponse->json();
+
+        // Assure that the data is correct so we can compare it to the first request
+        $this->assertArrayHasKey('products', $secondData);
+        $this->assertIsArray($secondData['products']);
+        $this->assertEquals(3, count($secondData['products']));
+
+        foreach ($secondData['products'] as $product) {
+            $this->assertArrayHasKey('id', $product);
+            $this->assertIsInt($product['id']);
+
+            $this->assertArrayHasKey('name', $product);
+            $this->assertIsString($product['name']);
+
+            $this->assertArrayHasKey('attributes', $product);
+            $this->assertIsArray($product['attributes']);
+
+            foreach ($product['attributes'] as $attribute) {
+                $this->assertArrayHasKey('name', $attribute);
+                $this->assertIsString($attribute['name']);
+
+                $this->assertArrayHasKey('value', $attribute);
+                $this->assertIsString($attribute['value']);
+            }
+        }
+
+        $this->assertArrayHasKey('page', $secondData);
+        $this->assertIsInt($secondData['page']);
+        $this->assertEquals(2, $secondData['page']);
+        $this->assertArrayHasKey('totalPages', $secondData);
+        $this->assertIsInt($secondData['totalPages']);
+
+        // Since we paginated - data should differ but not the total pages
+        $this->assertNotEquals($firstData['products'], $secondData['products']);
+        $this->assertNotEquals($firstData['page'], $secondData['page']);
+
+        $this->assertEquals($firstData['totalPages'], $secondData['totalPages']);
     }
 
     /**
