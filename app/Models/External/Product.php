@@ -91,7 +91,7 @@ class Product
      */
     public function find(int $id): array
     {
-        $success = $this->setData(1, 1, $id);
+        $success = $this->setData(1, 1, $id); // pagesize: 1, page: 1 because 1 product can not be elsewhere
 
         if (!$success) {
             return [

@@ -10,4 +10,8 @@ Route::get('/', function () {
 Route::get('/products', [ProductsController::class, 'index']);
 Route::get('/products/{id}', [ProductsController::class, 'get']);
 
+Route::any('{any}', function () {
+    return ['Unsupported route'];
+})->where('any', '^(?!products).*$');
+
 require __DIR__ . '/auth.php';
