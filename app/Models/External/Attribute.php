@@ -13,7 +13,7 @@ class Attribute
      *
      * @var string
      */
-    protected static $attributesUrl = 'https://draft.grebban.com/backend/attribute_meta.json';
+    protected $attributesUrl = 'https://draft.grebban.com/backend/attribute_meta.json';
 
     /**
      * Separator on nested attributes
@@ -22,19 +22,33 @@ class Attribute
      *
      * @var string
      */
-    protected static $attributeSeparator = ' > ';
+    protected $attributeSeparator = ' > ';
 
+    /**
+     * Array of attributes
+     *
+     * @var array
+     */
+    protected $data;
+
+    /**
+     * Construct for Attribute model
+     */
+    public function __construct()
+    {
+        $this->data = $this->all();
+    }
 
     /**
      * Get all attributes
      *
      * @return array
      */
-    public static function all()
+    public function all(): array
     {
 
         try {
-            $productsAttributeResponse = Requests::get(self::$attributesUrl);
+            $productsAttributeResponse = Requests::get($this->attributesUrl);
         } catch (\Exception $e) {
             Log::warning($e->getMessage());
 
@@ -61,12 +75,12 @@ class Attribute
      * @param string $attributeNameCode
      * @return array
      */
-    public static function handleAttributeValueCodes(array $valueCodes, string $attributeNameCode)
+    public function handleAttributeValueCodes(array $valueCodes, string $attributeNameCode): array
     {
         $attributes = [];
 
         foreach ($valueCodes as $valueCode) {
-            $attribute = self::getAttribute($attributeNameCode, $valueCode);
+            $attribute = $this->getAttribute($attributeNameCode, $valueCode);
 
             if ($attribute) {
                 $attributes[] = $attribute;
@@ -84,15 +98,15 @@ class Attribute
      * @param array $attributes
      * @return object
      */
-    protected static function getAttribute(string $attributeNameCode, string $attributeValueCode)
+    protected function getAttribute(string $attributeNameCode, string $attributeValueCode): object|false
     {
-        foreach (self::all() as $attribute) {
+        foreach ($this->data as $attribute) {
             if ($attribute->code !== $attributeNameCode || empty($attribute->values)) {
                 continue;
             }
 
             $name = $attribute->name;
-            $value = self::getAttributeValue($attributeValueCode, $attribute->values);
+            $value = $this->getAttributeValue($attributeValueCode, $attribute->values);
 
             if (!$name || !$value) {
                 continue;
@@ -104,6 +118,8 @@ class Attribute
 
             return $attributeObject;
         }
+
+        return false;
     }
 
 
@@ -112,9 +128,9 @@ class Attribute
      *
      * @param string $attributeValueCode
      * @param array $attributeValues
-     * @return string|void
+     * @return string
      */
-    protected static function getAttributeValue(string $attributeValueCode, array $attributeValues)
+    protected function getAttributeValue(string $attributeValueCode, array $attributeValues): string
     {
         foreach ($attributeValues as $attribute) {
             if ($attribute->code !== $attributeValueCode) {
@@ -123,23 +139,25 @@ class Attribute
 
             $valueCodeParts = explode('_', $attributeValueCode);
 
-            if (self::attributeIsNested($valueCodeParts)) {
+            if ($this->attributeIsNested($valueCodeParts)) {
                 $attributes[] = $attribute->name;
 
                 array_pop($valueCodeParts);
 
                 $parentAttributeCode = implode('_', $valueCodeParts);
 
-                $attributes[] = self::getAttributeValue($parentAttributeCode, $attributeValues);
+                $attributes[] = $this->getAttributeValue($parentAttributeCode, $attributeValues);
 
                 return implode(
-                    self::$attributeSeparator,
+                    $this->attributeSeparator,
                     array_reverse($attributes) // Since we start with the youngest child we have to reverse it to accomodate for parent > child format
                 );
             }
 
             return $attribute->name;
         }
+
+        return '';
     }
 
     /**
@@ -151,7 +169,7 @@ class Attribute
      * @param array $valueCodeParts
      * @return bool
      */
-    protected static function attributeIsNested(array $valueCodeParts)
+    protected function attributeIsNested(array $valueCodeParts): bool
     {
         return count($valueCodeParts) > 2;
     }
@@ -162,7 +180,7 @@ class Attribute
      * @param array $attributes
      * @return array
      */
-    public static function format(array $attributes)
+    public function format(array $attributes): array
     {
         $formatted = [];
 

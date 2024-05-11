@@ -22,7 +22,9 @@ class ProductsController extends Controller
             'page' => intval($request->query('page')) ?: 1
         ];
 
-        $data = Product::all($args);
+        $productModel = new Product($args);
+
+        $data = $productModel->all();
 
         if (!empty($data['error'])) {
             return response()->json($data)->setStatusCode($data['code']);
@@ -42,8 +44,8 @@ class ProductsController extends Controller
      */
     public function get(Request $request, int $id)
     {
-        $data = Product::find($id);
-
+        $productModel = new Product;
+        $data = $productModel->find($id);
         $data = !empty($data['products'][0]) ? $data['products'][0] : [];
 
         return response()->json($data);

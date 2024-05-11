@@ -14,45 +14,64 @@ class Product
      *
      * @var string
      */
-    protected static $productsUrl = 'https://draft.grebban.com/backend/products.json';
+    protected $productsUrl = 'https://draft.grebban.com/backend/products.json';
 
     /**
      * URL to the external products metadata
      *
      * @var string
      */
-    protected static $attributesUrl = 'https://draft.grebban.com/backend/attribute_meta.json';
+    protected $attributesUrl = 'https://draft.grebban.com/backend/attribute_meta.json';
+
+    /**
+     * Attribute Model
+     *
+     * @var Attribute
+     */
+    protected $attributeModel;
 
     /**
      * Combined data from products and attributes, resulting in the finalized data
      *
      * @var array
      */
-    protected static $data = [];
+    protected $data = [];
 
     /**
-     * Separator on nested attributes
-     * 
-     * Only here for easy access if it should be swapped out to another character
+     * Page size
      *
-     * @var string
+     * @var int
      */
-    protected static $attributeSeparator = ' > ';
+    protected $pageSize = 5; // Default value
+
+    /**
+     * Page number
+     *
+     * @var int
+     */
+    protected $page = 1; // Default value
+
+    /**
+     * Constructor for product model
+     *
+     * @param array $args
+     * @return void
+     */
+    public function __construct(array $args = [])
+    {
+        $this->pageSize = !empty($args['page_size']) ? intval($args['page_size']) : $this->pageSize;
+        $this->page = !empty($args['page']) ? intval($args['page']) : $this->page;
+        $this->attributeModel = new Attribute;
+    }
 
     /**
      * Get all products
      *
-     * @param array $args
      * @return array
      */
-    public static function all(array $args)
+    public function all(): array
     {
-        $args = [ // In case someone calls this method from somewhere unexpected
-            'page_size' => intval($args['page_size']) ?: 5,
-            'page' => intval($args['page']) ?: 1
-        ];
-
-        $success = self::setData($args['page_size'], $args['page']);
+        $success = $this->setData($this->pageSize, $this->page);
 
         if (!$success) {
             return [
@@ -61,7 +80,7 @@ class Product
             ];
         }
 
-        return self::$data;
+        return $this->data;
     }
 
     /**
@@ -70,9 +89,9 @@ class Product
      * @param int $id
      * @return array
      */
-    public static function find(int $id)
+    public function find(int $id): array
     {
-        $success = self::setData(1, 1, $id);
+        $success = $this->setData(1, 1, $id);
 
         if (!$success) {
             return [
@@ -81,7 +100,7 @@ class Product
             ];
         }
 
-        return self::$data;
+        return $this->data;
     }
 
     /**
@@ -92,10 +111,10 @@ class Product
      * @param int $id A specific id we are trying to get
      * @return bool Whether or not the process of setting the data was successful
      */
-    protected static function setData(int $pageSize = 5, int $page = 1, int $id = 0)
+    protected function setData(int $pageSize, int $page, int $id = 0): bool
     {
         try {
-            $productsUrlResponse = Requests::get(self::$productsUrl);
+            $productsUrlResponse = Requests::get($this->productsUrl);
         } catch (\Exception $e) {
             Log::warning($e->getMessage());
 
@@ -113,17 +132,17 @@ class Product
         }
 
         if ($id) {
-            $products = self::getSingleProduct($products, $id);
+            $products = $this->getSingleProduct($products, $id);
         } else {
             $pages = array_chunk($products, $pageSize);
             $maxPage = count($pages);
-            $page = self::forceValidPage($page, $maxPage);
-            $products = $pages[self::getPageIndex($page, $maxPage, $pages)];
+            $page = $this->forceValidPage($page, $maxPage);
+            $products = $pages[$this->getPageIndex($page, $maxPage, $pages)];
         }
 
-        self::$data['products'] = self::buildProductsData($products);
-        self::$data['page'] = $page;
-        self::$data['totalPages'] = $id ? 1 : $maxPage;
+        $this->data['products'] = $this->buildProductsData($products);
+        $this->data['page'] = $page;
+        $this->data['totalPages'] = $id ? 1 : $maxPage;
 
         return true;
     }
@@ -135,7 +154,7 @@ class Product
      * @param integer $id
      * @return array
      */
-    protected static function getSingleProduct(array $products, int $id)
+    protected function getSingleProduct(array $products, int $id): array
     {
         foreach ($products as $product) {
             if (empty($product->id) || $product->id !== $id) {
@@ -156,7 +175,7 @@ class Product
      * @param array $pages
      * @return int
      */
-    protected static function getPageIndex(int $page, int $maxPage, array $pages)
+    protected function getPageIndex(int $page, int $maxPage, array $pages): int
     {
         if ($page <= 1) {
             return 0;
@@ -175,14 +194,14 @@ class Product
      * @param array $products
      * @return array
      */
-    protected static function buildProductsData(array &$products)
+    protected function buildProductsData(array &$products): array
     {
         foreach ($products as $product) {
             if (empty($product->attributes) || !is_object($product->attributes)) {
                 continue;
             }
 
-            $product->attributes = self::handleProductAttributes($product->attributes);
+            $product->attributes = $this->handleProductAttributes($product->attributes);
         }
 
         return $products;
@@ -194,16 +213,16 @@ class Product
      * @param object $productAttributes
      * @return array
      */
-    protected static function handleProductAttributes(object $productAttributes)
+    protected function handleProductAttributes(object $productAttributes): array
     {
         $attributes = [];
 
         foreach ($productAttributes as $attribute_name_code => $attribute_value_code) {
             $value_codes = explode(',', $attribute_value_code);
-            $attributes[] = Attribute::handleAttributeValueCodes($value_codes, $attribute_name_code);
+            $attributes[] = $this->attributeModel->handleAttributeValueCodes($value_codes, $attribute_name_code);
         }
 
-        return Attribute::format($attributes);
+        return $this->attributeModel->format($attributes);
     }
 
     /**
@@ -213,7 +232,7 @@ class Product
      * @param int $maxPage
      * @return int
      */
-    protected static function forceValidPage(int $page, int $maxPage)
+    protected function forceValidPage(int $page, int $maxPage): int
     {
         if ($page < 1) {
             return 1;
