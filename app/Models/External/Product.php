@@ -42,11 +42,17 @@ class Product
     /**
      * Get all products
      *
+     * @param array $args
      * @return array
      */
-    public static function all()
+    public static function all(array $args)
     {
-        $success = self::setProductsData();
+        $args = [ // In case someone calls this method from somewhere unexpected
+            'page_size' => intval($args['page_size']) ?: 5,
+            'page' => intval($args['page']) ?: 1
+        ];
+
+        $success = self::setProductsData($args['page_size'], $args['page']);
 
         if (!$success) {
             return [
@@ -87,9 +93,11 @@ class Product
     /**
      * Set products data from the productsUrl and attributesUrl
      *
+     * @param int $page_size How many products each page should contain
+     * @param int $page What specific page we are trying to get
      * @return bool Whether or not the process of setting the data was successful
      */
-    protected static function setProductsData()
+    protected static function setProductsData(int $page_size = 5, int $page = 1)
     {
         try {
             $productsUrlResponse = Requests::get(self::$productsUrl);
@@ -107,9 +115,37 @@ class Product
         $products = json_decode($productsUrlResponse->body);
         $attributes = json_decode($productsAttributeResponse->body);
 
+        if (!$products || !$attributes) {
+            return false;
+        }
+
+        $pages = array_chunk($products, $page_size);
+        $products = $pages[self::getPageIndex($page, $pages)];
         self::$productsData = self::buildProductsData($products, $attributes);
 
         return true;
+    }
+
+    /**
+     * Get index of a page in the pages array
+     *
+     * @param integer $page
+     * @param array $pages
+     * @return int
+     */
+    protected static function getPageIndex(int $page, array $pages)
+    {
+        if ($page <= 1) {
+            return 0;
+        }
+
+        $max_page = count($pages);
+
+        if ($page >= $max_page) {
+            return $max_page - 1;
+        }
+
+        return !empty($pages[$page - 1]) ? $page - 1 : 0; // Just in case, if for some reason the index does not exists in the array
     }
 
     /**

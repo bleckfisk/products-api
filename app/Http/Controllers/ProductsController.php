@@ -17,7 +17,12 @@ class ProductsController extends Controller
      */
     public function index(Request $request)
     {
-        $data = Product::all();
+        $args = [
+            'page_size' => intval($request->query('page_size')) ?: 5,
+            'page' => intval($request->query('page')) ?: 1
+        ];
+
+        $data = Product::all($args);
 
         if (!empty($data['error'])) {
             return response()->json($data)->setStatusCode($data['code']);
