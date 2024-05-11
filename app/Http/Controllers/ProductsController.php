@@ -18,12 +18,18 @@ class ProductsController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $validatedData = $request->validate([
+            'page_size' => 'integer|min:1',
+            'page' => 'integer|min:1',
+        ]);
+
         $args = [
-            'page_size' => intval($request->query('page_size')) ?: 5,
-            'page' => intval($request->query('page')) ?: 1
+            'page_size' => $validatedData['page_size'] ?? 5,
+            'page' => $validatedData['page'] ?? 1
         ];
 
         $productModel = new Product($args);
+
         $data = $productModel->all();
 
         if (!empty($data['error'])) {

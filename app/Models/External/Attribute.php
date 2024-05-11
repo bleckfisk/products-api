@@ -46,7 +46,6 @@ class Attribute
      */
     public function all(): array
     {
-
         try {
             $productsAttributeResponse = Requests::get($this->attributesUrl);
         } catch (\Exception $e) {
