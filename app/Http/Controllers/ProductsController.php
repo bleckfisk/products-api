@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\External\Product;
+use Illuminate\Http\JsonResponse;
 
 class ProductsController extends Controller
 {
@@ -15,7 +16,7 @@ class ProductsController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $args = [
             'page_size' => intval($request->query('page_size')) ?: 5,
@@ -23,7 +24,6 @@ class ProductsController extends Controller
         ];
 
         $productModel = new Product($args);
-
         $data = $productModel->all();
 
         if (!empty($data['error'])) {
@@ -42,7 +42,7 @@ class ProductsController extends Controller
      * @param integer $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get(Request $request, int $id)
+    public function get(Request $request, int $id): JsonResponse
     {
         $productModel = new Product;
         $data = $productModel->find($id);
