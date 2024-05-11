@@ -10,7 +10,7 @@
 
 
 ## Routes/Endpoints
-All endpoints are assuming `localhost:8000`
+All endpoints below are assuming `localhost:8000` unless you've changed something in the configuration files
 
 `/` - Check if we are alive. This will return the laravel version, nothing fancy
 
