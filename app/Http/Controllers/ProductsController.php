@@ -44,6 +44,8 @@ class ProductsController extends Controller
     {
         $data = Product::find($id);
 
+        $data = !empty($data['products'][0]) ? $data['products'][0] : [];
+
         return response()->json($data);
     }
 }
