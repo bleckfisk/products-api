@@ -7,6 +7,7 @@ This covers point 3, 4, 5 and 6 of the setup guilde below
 
 ### Other makefile commands
 `make serve` - start the server
+
 `make test` - run the tests
 
 ## Setup
