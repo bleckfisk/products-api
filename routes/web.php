@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\ProductsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return ['Laravel' => app()->version()];
 });
 
-require __DIR__.'/auth.php';
+Route::get('/products', [ProductsController::class, 'index']);
+Route::get('/products/{id}', [ProductsController::class, 'get']);
+
+require __DIR__ . '/auth.php';
