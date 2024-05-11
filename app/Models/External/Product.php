@@ -72,7 +72,7 @@ class Product
      */
     public static function find(int $id)
     {
-        $success = self::setProductsData();
+        $success = self::setProductsData(1, 1, $id);
 
         if (!$success) {
             return [
@@ -81,13 +81,7 @@ class Product
             ];
         }
 
-        foreach (self::$productsData as $product) {
-            if (empty($product['id']) || $product['id'] !== $id) {
-                continue;
-            }
-
-            return $product;
-        }
+        return self::$productsData;
     }
 
     /**
@@ -95,9 +89,10 @@ class Product
      *
      * @param int $page_size How many products each page should contain
      * @param int $page What specific page we are trying to get
+     * @param int $id A specific id we are trying to get
      * @return bool Whether or not the process of setting the data was successful
      */
-    protected static function setProductsData(int $page_size = 5, int $page = 1)
+    protected static function setProductsData(int $page_size = 5, int $page = 1, int $id = 0)
     {
         try {
             $productsUrlResponse = Requests::get(self::$productsUrl);
@@ -119,8 +114,19 @@ class Product
             return false;
         }
 
-        $pages = array_chunk($products, $page_size);
-        $products = $pages[self::getPageIndex($page, $pages)];
+        if ($id) {
+            foreach ($products as $product) {
+                if (empty($product->id) || $product->id !== $id) {
+                    continue;
+                }
+
+                $products = [$product];
+            }
+        } else {
+            $pages = array_chunk($products, $page_size);
+            $products = $pages[self::getPageIndex($page, $pages)];
+        }
+
         self::$productsData = self::buildProductsData($products, $attributes);
 
         return true;
