@@ -1,5 +1,10 @@
 # Simple Product REST Api
 
+## Quickstart
+The repository contains a make file with some commands. 
+To quickstart the application, run `make setup` when standing in the repository.
+This covers point 3, 4, 5 and 6 of the setup guilde below
+
 ## Setup
 1. `git clone git@github.com:Bleckfisk/products-api`
 2. `cd products-api` to go to the project
